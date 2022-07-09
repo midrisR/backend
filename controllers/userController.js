@@ -81,7 +81,7 @@ const Login = asyncHandle(async (req, res) => {
 const updateUserInformation = asyncHandle(async (req, res) => {
 	const id = req.user.id;
 	const user = await User.findById(id);
-	let file = user.avatar;
+	let avatar = user.avatar;
 	const { name, socialMedia, about } = req.body;
 	const data = {
 		name,
@@ -93,18 +93,16 @@ const updateUserInformation = asyncHandle(async (req, res) => {
 		res.status(422);
 		throw error;
 	}
-	// if (!user) {
-	// 	res.status(404);
-	// 	throw new Error('not found');
-	// }
 
-	if (req.file) {
-		const result = await uploadToCloudinary('user', req.file.path);
-		file = result.url;
+	if (!user) {
+		res.status(404);
+		throw new Error('not found');
 	}
 
 	try {
-		const update = await User.findByIdAndUpdate(id, { ...data, avatar: file }, { new: true });
+		if (req.file) avatar = await uploadToCloudinary('user', req.file.path);
+		const update = await User.findByIdAndUpdate(id, { ...data, avatar: avatar }, { new: true });
+		fs.unlinkSync(req.file.path);
 		return res.status(200).json(update);
 	} catch (error) {
 		console.log(error);
